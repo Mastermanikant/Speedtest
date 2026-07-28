@@ -31,12 +31,15 @@ if "%COMMIT_MSG%"=="" set COMMIT_MSG=Update Speed Test App
 git commit -m "%COMMIT_MSG%"
 
 echo.
-git remote -v >nul 2>&1
-if errorlevel 1 (
+set REMOTES=
+for /f "delims=" %%a in ('git remote') do set REMOTES=%%a
+if "%REMOTES%"=="" (
     echo.
     echo No Remote Repository Connected!
     set /p REPO_URL="Enter your GitHub Repository URL (e.g. https://github.com/username/speedtest.git): "
-    if not "%REPO_URL%"=="" (
+    if not "!REPO_URL!"=="" (
+        git remote add origin !REPO_URL!
+    ) else (
         git remote add origin %REPO_URL%
     )
 )
