@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HyperSpeed - Next-Gen Internet Speed Test</title>
+  <meta name="description" content="Accurate, unfakeable internet speed test with bufferbloat measurement, jitter detection, and low-speed adaptive engine." />
+  <meta name="theme-color" content="#0f172a" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="index.css" />
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="background-glow"></div>
+  
+  <div class="app-container">
+    <!-- Header -->
+    <header class="glass-header">
+      <div class="brand">
+        <span class="logo-icon">⚡</span>
+        <h1>Frankbase <span>SpeedPulse</span></h1>
+      </div>
+      
+      <div class="controls-group">
+        <!-- Data Saver Toggle -->
+        <label class="toggle-card" title="Limits test payload to 5MB max for mobile data plans">
+          <input type="checkbox" id="dataSaverToggle" />
+          <span class="slider"></span>
+          <span class="toggle-label">Data Saver (5MB Cap)</span>
+        </label>
+        
+        <!-- Multi-Thread Toggle -->
+        <label class="toggle-card" title="Toggle multi-thread vs single-thread speed test">
+          <input type="checkbox" id="multiThreadToggle" checked />
+          <span class="slider"></span>
+          <span class="toggle-label">Multi-Thread</span>
+        </label>
+      </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="main-layout">
+      <!-- Speedometer Section -->
+      <section class="gauge-section glass-card">
+        <!-- ISP & Network Badge -->
+        <div class="network-badge" id="networkBadge">
+          <span class="pulse-dot"></span>
+          <span id="ispName">Detecting Network...</span>
+        </div>
+
+        <!-- Canvas Speedometer -->
+        <div class="gauge-container">
+          <canvas id="gaugeCanvas" width="340" height="260"></canvas>
+          <div class="gauge-readout">
+            <span class="current-value" id="gaugeValue">0.00</span>
+            <span class="current-unit" id="gaugeUnit">Mbps</span>
+            <span class="test-phase" id="testPhaseLabel">Ready</span>
+          </div>
+        </div>
+
+        <!-- Start Button -->
+        <button id="startBtn" class="primary-btn">
+          <span class="btn-text">START SPEED TEST</span>
+        </button>
+      </section>
+
+      <!-- Real-Time Metrics Cards -->
+      <section class="metrics-grid">
+        <!-- Download Card -->
+        <div class="metric-card glass-card">
+          <div class="metric-header">
+            <span class="metric-icon download-icon">⬇</span>
+            <span class="metric-title">Download</span>
+          </div>
+          <div class="metric-body">
+            <span class="metric-value" id="downloadValue">--</span>
+            <span class="metric-unit">Mbps</span>
+          </div>
+        </div>
+
+        <!-- Upload Card -->
+        <div class="metric-card glass-card">
+          <div class="metric-header">
+            <span class="metric-icon upload-icon">⬆</span>
+            <span class="metric-title">Upload</span>
+          </div>
+          <div class="metric-body">
+            <span class="metric-value" id="uploadValue">--</span>
+            <span class="metric-unit">Mbps</span>
+          </div>
+        </div>
+
+        <!-- Ping & Jitter Card -->
+        <div class="metric-card glass-card">
+          <div class="metric-header">
+            <span class="metric-icon ping-icon">📡</span>
+            <span class="metric-title">Ping / Jitter</span>
+          </div>
+          <div class="metric-body dual-metric">
+            <div>
+              <span class="sub-label">Idle Ping</span>
+              <span class="metric-value-sm" id="pingValue">--</span> <span class="unit-sm">ms</span>
+            </div>
+            <div>
+              <span class="sub-label">Jitter</span>
+              <span class="metric-value-sm" id="jitterValue">--</span> <span class="unit-sm">ms</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bufferbloat Card -->
+        <div class="metric-card glass-card" id="bufferbloatCard">
+          <div class="metric-header">
+            <span class="metric-icon game-icon">🎮</span>
+            <span class="metric-title">Bufferbloat Rating</span>
+          </div>
+          <div class="metric-body bufferbloat-body">
+            <span class="grade-badge grade-none" id="bufferbloatGrade">--</span>
+            <span class="grade-desc" id="bufferbloatDesc">Ping under load score</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- History & Share Section -->
+    <section class="history-section glass-card">
+      <div class="history-header">
+        <h2>Recent Test History</h2>
+        <div class="history-actions">
+          <button id="exportCsvBtn" class="secondary-btn">📥 Export CSV</button>
+          <button id="clearHistoryBtn" class="ghost-btn">🗑 Clear</button>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>Download</th>
+              <th>Upload</th>
+              <th>Ping</th>
+              <th>Jitter</th>
+              <th>Bufferbloat</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody">
+            <tr>
+              <td colspan="6" class="empty-msg">No tests recorded yet. Click Start Speed Test!</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- JavaScript Modules -->
+  <script type="module" src="src/js/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js').catch(err => console.log('SW Reg Error:', err));
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+# Wrangler build cache
+.wrangler/
+worker/.wrangler/
+
+# Node modules
+node_modules/
+
+# Agent working files
+.agents/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Test artifacts
+*.log
+__pycache__/

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Frankbase Speedtest - Next-Gen Internet Speed Test</title>
+  <meta name="description" content="Accurate, unfakeable internet speed test with bufferbloat measurement, jitter detection, and low-speed adaptive engine." />
+  <meta name="theme-color" content="#0f172a" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="index.css" />
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Chart.js UMD -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="background-glow"></div>
+  
+  <div class="app-container">
+    <!-- Header -->
+    <header class="glass-header">
+      <div class="brand">
+        <span class="logo-icon">⚡</span>
+        <h1>Frankbase <span>Speedtest</span></h1>
+      </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="main-layout">
+      <!-- Speedometer Section -->
+      <section class="gauge-section glass-card">
+        <!-- ISP & Network Badge -->
+        <div class="network-badge" id="networkBadge">
+          <span class="pulse-dot"></span>
+          <span id="ispName">Detecting Network...</span>
+        </div>
+
+        <!-- Canvas Speedometer -->
+        <div class="gauge-container">
+          <canvas id="gaugeCanvas" width="340" height="260"></canvas>
+          <div class="gauge-readout">
+            <span class="current-value" id="gaugeValue">0.00</span>
+            <span class="current-unit" id="gaugeUnit">Mbps</span>
+            <span class="test-phase" id="testPhaseLabel">Ready</span>
+          </div>
+        </div>
+
+        <!-- Start Button -->
+        <button id="startBtn" class="primary-btn">
+          <span class="btn-text">START SPEED TEST</span>
+        </button>
+      </section>
+
+      <!-- Live Speed Graph Section -->
+      <section class="graph-section glass-card">
+        <div class="graph-section-header">
+          <div class="graph-title-group">
+            <span class="graph-icon">📈</span>
+            <h2 class="graph-title">Live Speed Graph</h2>
+          </div>
+          <div class="graph-legend">
+            <div class="legend-item">
+              <span class="legend-dot" style="background: #06b6d4;"></span>
+              <span class="legend-label">Download</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot" style="background: #8b5cf6;"></span>
+              <span class="legend-label">Upload</span>
+            </div>
+          </div>
+        </div>
+        <div class="graph-canvas-wrapper">
+          <canvas id="speedChart"></canvas>
+        </div>
+      </section>
+
+      <!-- Real-Time Metrics Cards -->
+      <section class="metrics-grid">
+        <!-- Download Card -->
+        <div class="metric-card glass-card">
+          <div class="metric-header">
+            <span class="metric-icon download-icon">⬇</span>
+            <span class="metric-title">Download</span>
+          </div>
+          <div class="metric-body">
+            <span class="metric-value" id="downloadValue">--</span>
+            <span class="metric-unit">Mbps</span>
+          </div>
+        </div>
+
+        <!-- Upload Card -->
+        <div class="metric-card glass-card">
+          <div class="metric-header">
+            <span class="metric-icon upload-icon">⬆</span>
+            <span class="metric-title">Upload</span>
+          </div>
+          <div class="metric-body">
+            <span class="metric-value" id="uploadValue">--</span>
+            <span class="metric-unit">Mbps</span>
+          </div>
+        </div>
+
+        <!-- Ping & Jitter Card -->
+        <div class="metric-card glass-card">
+          <div class="metric-header">
+            <span class="metric-icon ping-icon">📡</span>
+            <span class="metric-title">Ping / Jitter</span>
+          </div>
+          <div class="metric-body dual-metric">
+            <div>
+              <span class="sub-label">Idle Ping</span>
+              <span class="metric-value-sm" id="pingValue">--</span> <span class="unit-sm">ms</span>
+            </div>
+            <div>
+              <span class="sub-label">Jitter</span>
+              <span class="metric-value-sm" id="jitterValue">--</span> <span class="unit-sm">ms</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bufferbloat Card -->
+        <div class="metric-card glass-card" id="bufferbloatCard">
+          <div class="metric-header">
+            <span class="metric-icon game-icon">🎮</span>
+            <span class="metric-title">Bufferbloat Rating</span>
+          </div>
+          <div class="metric-body bufferbloat-body">
+            <span class="grade-badge grade-none" id="bufferbloatGrade">--</span>
+            <span class="grade-desc" id="bufferbloatDesc">Ping under load score</span>
+          </div>
+        </div>
+      </section>
+      <!-- Info Cards: What Do These Numbers Mean? -->
+      <section class="info-cards-section">
+        <div class="info-section-header">
+          <span class="info-section-icon">📊</span>
+          <h2 class="info-section-title">What Do These Numbers Mean?</h2>
+        </div>
+        <div class="info-cards-grid">
+          <!-- Ping Card -->
+          <div class="info-card glass-card">
+            <div class="info-card-top">
+              <span class="info-card-icon">📡</span>
+              <span class="info-card-name">Ping (Latency)</span>
+            </div>
+            <p class="info-card-desc">Response time of your network. Lower is better for gaming and video calls.</p>
+            <div class="info-rating-list">
+              <div class="info-rating excellent"><span class="rating-dot"></span><span>&lt; 20ms — Excellent (Gaming)</span></div>
+              <div class="info-rating good"><span class="rating-dot"></span><span>&lt; 50ms — Good (Streaming)</span></div>
+              <div class="info-rating poor"><span class="rating-dot"></span><span>&gt; 100ms — Slow (Noticeable Lag)</span></div>
+            </div>
+            <p class="info-card-tip">💡 जितना कम ms, उतना तेज़ response</p>
+          </div>
+
+          <!-- Download Card -->
+          <div class="info-card glass-card">
+            <div class="info-card-top">
+              <span class="info-card-icon">⬇️</span>
+              <span class="info-card-name">Download Speed</span>
+            </div>
+            <p class="info-card-desc">Speed at which data comes to your device. Affects streaming, browsing, and downloads.</p>
+            <div class="info-rating-list">
+              <div class="info-rating excellent"><span class="rating-dot"></span><span>&gt; 100 Mbps — Excellent (4K HDR)</span></div>
+              <div class="info-rating good"><span class="rating-dot"></span><span>&gt; 25 Mbps — Good (HD Streaming)</span></div>
+              <div class="info-rating poor"><span class="rating-dot"></span><span>&lt; 5 Mbps — Slow (Buffering)</span></div>
+            </div>
+            <p class="info-card-tip">💡 जितना ज़्यादा Mbps, उतना अच्छा</p>
+          </div>
+
+          <!-- Upload Card -->
+          <div class="info-card glass-card">
+            <div class="info-card-top">
+              <span class="info-card-icon">⬆️</span>
+              <span class="info-card-name">Upload Speed</span>
+            </div>
+            <p class="info-card-desc">Speed at which data goes from your device to internet. Affects video calls and uploads.</p>
+            <div class="info-rating-list">
+              <div class="info-rating excellent"><span class="rating-dot"></span><span>&gt; 20 Mbps — Excellent (Live Stream)</span></div>
+              <div class="info-rating good"><span class="rating-dot"></span><span>&gt; 5 Mbps — Good (Video Calls)</span></div>
+              <div class="info-rating poor"><span class="rating-dot"></span><span>&lt; 1 Mbps — Slow (Uploads Lag)</span></div>
+            </div>
+            <p class="info-card-tip">💡 जितना ज़्यादा Mbps, उतना बेहतर</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- History & Share Section -->
+    <section class="history-section glass-card">
+      <div class="history-header">
+        <h2>Recent Test History</h2>
+        <div class="history-actions">
+          <button id="exportCsvBtn" class="secondary-btn">📥 Export CSV</button>
+          <button id="clearHistoryBtn" class="ghost-btn">🗑 Clear</button>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>Download</th>
+              <th>Upload</th>
+              <th>Ping</th>
+              <th>Jitter</th>
+              <th>Bufferbloat</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody">
+            <tr>
+              <td colspan="6" class="empty-msg">No tests recorded yet. Click Start Speed Test!</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>Designed and Developed by <strong>MasterManikant Yadav</strong> with the help of <strong>Google Antigravity</strong>.</p>
+    </footer>
+  </div>
+
+  <!-- JavaScript Modules -->
+  <script type="module" src="src/js/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js').catch(err => console.log('SW Reg Error:', err));
+    }
+  </script>
+</body>
+</html>
