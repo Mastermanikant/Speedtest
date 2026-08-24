@@ -1,6 +1,6 @@
 // App Controller - Connects UI with SpeedTestEngine and SpeedTestStorage
 import { SpeedTestStorage } from './storage.js';
-import { SpeedTestEngine } from './engine.js';
+import { SpeedTestEngine } from './engine.js?v=14';
 
 document.addEventListener('DOMContentLoaded', () => {
   // DOM Elements
@@ -14,11 +14,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const testPhaseLabel = document.getElementById('testPhaseLabel');
   
   const downloadValueEl = document.getElementById('downloadValue');
-  const uploadValueEl = document.getElementById('uploadValue');
   const pingValueEl = document.getElementById('pingValue');
   const jitterValueEl = document.getElementById('jitterValue');
   const bufferbloatGradeEl = document.getElementById('bufferbloatGrade');
   const bufferbloatDescEl = document.getElementById('bufferbloatDesc');
+  
+  const togglePing = document.getElementById('togglePing');
+  const toggleDownload = document.getElementById('toggleDownload');
+  const toggleBufferbloat = document.getElementById('toggleBufferbloat');
   
   const historyTableBody = document.getElementById('historyTableBody');
   const exportCsvBtn = document.getElementById('exportCsvBtn');
@@ -61,16 +64,6 @@ document.addEventListener('DOMContentLoaded', () => {
             data: [],
             borderColor: '#06b6d4',
             backgroundColor: downloadGradient,
-            fill: true,
-            tension: 0.4,
-            pointRadius: 0,
-            borderWidth: 2
-          },
-          {
-            label: 'Upload',
-            data: [],
-            borderColor: '#8b5cf6',
-            backgroundColor: uploadGradient,
             fill: true,
             tension: 0.4,
             pointRadius: 0,
@@ -295,11 +288,10 @@ document.addEventListener('DOMContentLoaded', () => {
       historyTableBody.innerHTML = history.slice(-10).reverse().map(item => `
         <tr>
           <td>${new Date(item.timestamp).toLocaleString()}</td>
-          <td style="color: var(--accent-cyan); font-weight: 600;">${Number(item.downloadMbps).toFixed(2)} Mbps</td>
-          <td style="color: var(--accent-purple); font-weight: 600;">${Number(item.uploadMbps).toFixed(2)} Mbps</td>
+          <td style="color: var(--accent-cyan); font-weight: 600;">${item.downloadMbps ? Number(item.downloadMbps).toFixed(2) + ' Mbps' : '--'}</td>
           <td>${Number(item.pingMs).toFixed(1)} ms</td>
           <td>${Number(item.jitterMs).toFixed(1)} ms</td>
-          <td><span class="grade-badge grade-${String(item.bufferbloatGrade).toLowerCase().replace('+', '-plus')}">${item.bufferbloatGrade}</span></td>
+          <td>${item.bufferbloatGrade && item.bufferbloatGrade !== '--' ? `<span class="grade-badge grade-${String(item.bufferbloatGrade).toLowerCase().replace('+', '-plus')}">${item.bufferbloatGrade}</span>` : '--'}</td>
         </tr>
       `).join('');
     } catch (e) {
@@ -323,13 +315,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (speedChart) {
       speedChart.data.labels = [];
       speedChart.data.datasets[0].data = [];
-      speedChart.data.datasets[1].data = [];
       speedChart.update('none');
     }
 
     // Reset UI Values
     downloadValueEl.textContent = '--';
-    uploadValueEl.textContent = '--';
     pingValueEl.textContent = '--';
     jitterValueEl.textContent = '--';
     bufferbloatGradeEl.textContent = '--';
@@ -345,91 +335,85 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     try {
-      // 1. PING & JITTER TEST
-      testPhaseLabel.textContent = 'Testing Ping & Jitter...';
-      const pingResult = await engine.runPingTest();
-      const pingVal = pingResult.ping !== undefined ? pingResult.ping : pingResult.avg;
-      const jitterVal = pingResult.jitter || 0;
+      let pingVal = 0;
+      let jitterVal = 0;
+      let downloadMbps = 0;
+      let bbGrade = '--';
 
-      pingValueEl.textContent = Number(pingVal).toFixed(1);
-      jitterValueEl.textContent = Number(jitterVal).toFixed(1);
+      const doPing = togglePing ? togglePing.checked : true;
+      const doDownload = toggleDownload ? toggleDownload.checked : true;
+      const doBufferbloat = toggleBufferbloat ? toggleBufferbloat.checked : false;
 
-      // Start Gauge Animation Loop
+      if (!doPing && !doDownload && !doBufferbloat) {
+        testPhaseLabel.textContent = 'Please select at least one test!';
+        return;
+      }
+
+      // Start Gauge Animation Loop globally for the test
       animId = requestAnimationFrame(animateGauge);
 
+      // 1. PING & JITTER TEST
+      if (doPing || doBufferbloat) {
+        testPhaseLabel.textContent = 'Testing Ping & Jitter...';
+        const pingResult = await engine.runPingTest();
+        pingVal = pingResult.ping !== undefined ? pingResult.ping : pingResult.avg;
+        jitterVal = pingResult.jitter || 0;
+
+        pingValueEl.textContent = Number(pingVal).toFixed(1);
+        jitterValueEl.textContent = Number(jitterVal).toFixed(1);
+      }
+
       // 2. DOWNLOAD TEST
-      testPhaseLabel.textContent = 'Testing Download Speed...';
-      
-      // Scroll graph section into view smoothly
-      const graphSection = document.querySelector('.graph-section');
-      if (graphSection) graphSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      if (doDownload) {
+        testPhaseLabel.textContent = 'Testing Download Speed...';
+        
+        const graphSection = document.querySelector('.graph-section');
+        if (graphSection) graphSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-      targetSpeed = 0;
-      currentSpeed = 0;
-      emaSpeed = 0;
+        targetSpeed = 0;
+        currentSpeed = 0;
+        emaSpeed = 0;
 
-      const downloadRaw = await engine.runDownloadTest((speed) => {
-        updateTargetSpeed(speed);
-        if (speedChart) {
-          const timestamp = `${((performance.now() - testStartTime) / 1000).toFixed(1)}s`;
-          const mbpsVal = Number((typeof speed === 'number' ? speed : Number(speed)).toFixed(2));
-          speedChart.data.labels.push(timestamp);
-          speedChart.data.datasets[0].data.push(mbpsVal);
-          speedChart.data.datasets[1].data.push(null);
-          speedChart.update('none');
-        }
-      });
+        const downloadRaw = await engine.runDownloadTest((speed) => {
+          updateTargetSpeed(speed);
+          if (speedChart) {
+            const timestamp = `${((performance.now() - testStartTime) / 1000).toFixed(1)}s`;
+            const mbpsVal = Number((typeof speed === 'number' ? speed : Number(speed)).toFixed(2));
+            speedChart.data.labels.push(timestamp);
+            speedChart.data.datasets[0].data.push(mbpsVal);
+            speedChart.update('none');
+          }
+        });
 
-      const downloadMbps = typeof downloadRaw === 'object' && downloadRaw.speedMbps !== undefined 
-        ? downloadRaw.speedMbps 
-        : Number(downloadRaw);
+        downloadMbps = typeof downloadRaw === 'object' && downloadRaw.speedMbps !== undefined 
+          ? downloadRaw.speedMbps 
+          : Number(downloadRaw);
 
-      downloadValueEl.textContent = downloadMbps.toFixed(2);
+        downloadValueEl.textContent = downloadMbps.toFixed(2);
+      }
 
-      // 3. UPLOAD TEST
-      testPhaseLabel.textContent = 'Testing Upload Speed...';
-      targetSpeed = 0;
-      currentSpeed = 0;
-      emaSpeed = 0;
-
-      const uploadRaw = await engine.runUploadTest((speed) => {
-        updateTargetSpeed(speed);
-        if (speedChart) {
-          const timestamp = `${((performance.now() - testStartTime) / 1000).toFixed(1)}s`;
-          const mbpsVal = Number((typeof speed === 'number' ? speed : Number(speed)).toFixed(2));
-          speedChart.data.labels.push(timestamp);
-          speedChart.data.datasets[0].data.push(null);
-          speedChart.data.datasets[1].data.push(mbpsVal);
-          speedChart.update('none');
-        }
-      });
-
-      const uploadMbps = typeof uploadRaw === 'object' && uploadRaw.speedMbps !== undefined 
-        ? uploadRaw.speedMbps 
-        : Number(uploadRaw);
-
-      uploadValueEl.textContent = uploadMbps.toFixed(2);
-
-      // 4. BUFFERBLOAT EVALUATION
-      const loadedPing = engine.loadedPingDownload || pingVal;
-      const bbGrade = engine.calculateBufferbloatGrade(pingVal, loadedPing);
-      bufferbloatGradeEl.textContent = bbGrade;
-      bufferbloatGradeEl.className = `grade-badge grade-${bbGrade.toLowerCase().replace('+', '-plus')}`;
-      bufferbloatDescEl.textContent = bbGrade.includes('A') ? 'Excellent for Gaming & Video Calls' : 'Network bufferbloat detected';
+      // 3. BUFFERBLOAT EVALUATION (If Gaming mode is ON and Download ran)
+      if (doBufferbloat && doDownload) {
+        const loadedPing = engine.loadedPingDownload || pingVal;
+        bbGrade = engine.calculateBufferbloatGrade(pingVal, loadedPing);
+        bufferbloatGradeEl.textContent = bbGrade;
+        bufferbloatGradeEl.className = `grade-badge grade-${bbGrade.toLowerCase().replace('+', '-plus')}`;
+        bufferbloatDescEl.textContent = bbGrade.includes('A') ? 'Excellent for Gaming & Video Calls' : 'Network bufferbloat detected';
+      } else if (!doBufferbloat) {
+        bufferbloatDescEl.textContent = 'Gaming Mode OFF';
+      }
 
       // Finish Test
       testPhaseLabel.textContent = 'Test Complete!';
       targetSpeed = 0;
 
-      // Save Result to IndexedDB — guard against NaN values
+      // Save Result to IndexedDB
       const safeDl = isFinite(downloadMbps) ? downloadMbps : 0;
-      const safeUl = isFinite(uploadMbps) ? uploadMbps : 0;
       const safePing = isFinite(pingVal) ? pingVal : 0;
       const safeJitter = isFinite(jitterVal) ? jitterVal : 0;
 
       await storage.saveResult({
         downloadMbps: safeDl,
-        uploadMbps: safeUl,
         pingMs: safePing,
         jitterMs: safeJitter,
         bufferbloatGrade: bbGrade,

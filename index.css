@@ -258,6 +258,119 @@ body {
   transform: none;
 }
 
+/* Smart Settings Toggles */
+.smart-settings {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 20px;
+  margin-bottom: 24px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 16px 24px;
+  border-radius: 16px;
+  border: 1px solid var(--glass-border);
+  box-shadow: inset 0 2px 10px rgba(0,0,0,0.2);
+}
+
+@media (max-width: 640px) {
+  .smart-settings {
+    flex-direction: column;
+    padding: 16px;
+    max-width: 320px;
+  }
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.toggle-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.toggle-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toggle-icon {
+  font-size: 1.1rem;
+}
+
+.toggle-warning {
+  font-size: 0.7rem;
+  color: var(--accent-pink);
+  margin-top: 2px;
+  margin-left: 26px;
+  font-style: italic;
+  opacity: 0.9;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.1);
+  transition: .3s;
+  border: 1px solid var(--glass-border);
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .3s;
+}
+
+.slider.round {
+  border-radius: 24px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
 /* Real-Time Speed Graph Container */
 .graph-container {
   width: 100%;
@@ -275,8 +388,14 @@ body {
 /* Metrics Grid */
 .metrics-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .metric-card {
@@ -495,7 +614,7 @@ body {
 
 .info-cards-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
 }
 

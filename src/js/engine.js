@@ -4,8 +4,8 @@ export class SpeedTestEngine {
     this.dataSaverMode = dataSaverMode;
     this.multiThread = multiThread;
     
-    // Create the Web Worker. The path is relative to the HTML file.
-    this.worker = new Worker('./src/js/speedtest-worker.js');
+    // Create the Web Worker with cache-busting to ensure latest code is fetched
+    this.worker = new Worker(`./src/js/speedtest-worker.js?v=${Date.now()}`);
     this.loadedPingDownload = 0;
     this.loadedPingUpload = 0;
   }
@@ -45,15 +45,6 @@ export class SpeedTestEngine {
     return result;
   }
 
-  async runUploadTest(onProgress) {
-    const result = await this._runWorkerCommand('upload', {
-      multiThread: this.multiThread,
-      dataSaverMode: this.dataSaverMode
-    }, onProgress);
-    
-    this.loadedPingUpload = result.loadedLatency;
-    return result;
-  }
 
   calculateBufferbloatGrade(idlePing, loadedPing) {
     if (idlePing === undefined || loadedPing === undefined || loadedPing === 0) return 'A';

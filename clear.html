@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Purge Cache & Service Worker - SpeedPulse</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .card {
+      background: rgba(30, 41, 59, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(16px);
+      padding: 2.2rem;
+      border-radius: 1.25rem;
+      text-align: center;
+      max-width: 480px;
+      width: 90%;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 0 30px rgba(6, 182, 212, 0.15);
+    }
+    h1 { font-size: 1.4rem; color: #38bdf8; margin-bottom: 0.5rem; }
+    p { color: #94a3b8; font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.5rem; }
+    .status {
+      margin: 1.25rem 0;
+      padding: 1rem 1.25rem;
+      border-radius: 0.75rem;
+      background: rgba(15, 23, 42, 0.7);
+      font-weight: 500;
+      font-size: 0.85rem;
+      text-align: left;
+      border: 1px solid rgba(255,255,255,0.05);
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .log-item { margin: 0.4rem 0; color: #86efac; font-family: monospace; }
+    .btn {
+      display: inline-block;
+      background: linear-gradient(135deg, #06b6d4, #3b82f6);
+      color: #fff;
+      font-weight: 600;
+      padding: 0.85rem 1.8rem;
+      border-radius: 0.6rem;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      margin-top: 1rem;
+      box-shadow: 0 4px 14px rgba(6, 182, 212, 0.4);
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(6, 182, 212, 0.6); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🧹 Cleaning Cache & Service Worker...</h1>
+    <p>This tool automatically purges old cache, unregisters stale Service Workers, and resets site storage.</p>
+    <div id="status" class="status">Initiating cleanup...</div>
+    <a id="go-btn" style="display:none;" href="/" class="btn">🚀 Open Fresh Speed Test</a>
+  </div>
+
+  <script>
+    async function purgeAll() {
+      const statusDiv = document.getElementById('status');
+      const goBtn = document.getElementById('go-btn');
+      statusDiv.innerHTML = '';
+      
+      const log = (msg) => {
+        const p = document.createElement('div');
+        p.className = 'log-item';
+        p.textContent = '✓ ' + msg;
+        statusDiv.appendChild(p);
+      };
+
+      try {
+        // 1. Unregister Service Workers
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (let reg of registrations) {
+            await reg.unregister();
+            log('Unregistered ServiceWorker: ' + reg.scope);
+          }
+          if (registrations.length === 0) log('No active Service Workers found.');
+        }
+
+        // 2. Clear Cache Storage
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          for (let key of keys) {
+            await caches.delete(key);
+            log('Deleted Cache Storage: ' + key);
+          }
+          if (keys.length === 0) log('No Cache Storage found.');
+        }
+
+        // 3. Clear Storage
+        localStorage.clear();
+        sessionStorage.clear();
+        log('Cleared LocalStorage & SessionStorage.');
+
+        const doneMsg = document.createElement('div');
+        doneMsg.style.color = '#38bdf8';
+        doneMsg.style.fontWeight = 'bold';
+        doneMsg.style.marginTop = '0.8rem';
+        doneMsg.textContent = '🎉 All Cache & Service Workers successfully purged!';
+        statusDiv.appendChild(doneMsg);
+
+        goBtn.style.display = 'inline-block';
+      } catch (err) {
+        statusDiv.textContent = 'Error during cleanup: ' + err.message;
+      }
+    }
+
+    purgeAll();
+  </script>
+</body>
+</html>

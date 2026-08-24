@@ -1,12 +1,8 @@
-const CACHE_NAME = 'hyperspeed-cache-v5';
+const CACHE_NAME = 'hyperspeed-cache-v11';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/index.css',
-  '/src/js/app.js',
-  '/src/js/engine.js',
-  '/src/js/storage.js',
-  '/src/js/speedtest-worker.js',
   '/manifest.json'
 ];
 
@@ -34,33 +30,36 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event - serve from cache, bypass /api/
+// Fetch event - serve from cache, bypass APIs & JS workers
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Bypass cache for API endpoints
-  if (url.pathname.startsWith('/api/')) {
-    return; // Let the browser handle the network request natively
+  // Bypass cache completely for API endpoints, speed test traffic, and JS files
+  if (
+    url.pathname.startsWith('/api/') || 
+    url.hostname.includes('workers.dev') || 
+    url.hostname.includes('cloudflare.com') ||
+    url.pathname.includes('/upload') ||
+    url.pathname.includes('/download') ||
+    url.pathname.includes('/ping') ||
+    url.pathname.endsWith('.js')
+  ) {
+    return; // Let the browser fetch natively from network
   }
 
-  // Cache-first strategy for static assets
+  // Network-first strategy for HTML/CSS
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      if (response) {
-        return response; // Return from cache if available
+    fetch(event.request).then((networkResponse) => {
+      if (networkResponse && networkResponse.ok) {
+        const responseToCache = networkResponse.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, responseToCache);
+        });
       }
-      return fetch(event.request).then((networkResponse) => {
-        // Cache dynamic static responses if necessary
-        if (event.request.method === 'GET' && !url.pathname.startsWith('/api/')) {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-        }
-        return networkResponse;
-      }).catch(() => {
-        // Fallback for offline mode if needed
-      });
+      return networkResponse;
+    }).catch(() => {
+      return caches.match(event.request);
     })
   );
 });
+

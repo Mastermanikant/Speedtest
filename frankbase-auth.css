@@ -1,0 +1,114 @@
+/* ==============================================================================
+   🌐 FrankBase Universal Auth & SSO CSS Framework (WCAG 2.1 AA Dual Theme)
+   ============================================================================== */
+
+:root {
+  --fb-modal-bg: #ffffff;
+  --fb-modal-text: #0f172a;
+  --fb-modal-sub: #64748b;
+  --fb-modal-border: #e2e8f0;
+  --fb-modal-shadow: rgba(0, 0, 0, 0.15);
+  --fb-modal-primary: #4f46e5;
+  --fb-modal-backdrop: rgba(15, 23, 42, 0.65);
+}
+
+[data-theme="dark"], body.dark, .dark {
+  --fb-modal-bg: #0f172a;
+  --fb-modal-text: #f8fafc;
+  --fb-modal-sub: #94a3b8;
+  --fb-modal-border: #334155;
+  --fb-modal-shadow: rgba(0, 0, 0, 0.45);
+  --fb-modal-primary: #6366f1;
+  --fb-modal-backdrop: rgba(0, 0, 0, 0.8);
+}
+
+.fb-auth-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--fb-modal-backdrop);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  padding: 1rem;
+  animation: fbFadeIn 0.2s ease-out forwards;
+}
+
+.fb-auth-modal-backdrop.active {
+  display: flex;
+}
+
+.fb-auth-modal-card {
+  position: relative;
+  background: var(--fb-modal-bg);
+  border: 1px solid var(--fb-modal-border);
+  border-radius: 1.5rem;
+  max-width: 420px;
+  width: 100%;
+  padding: 2.25rem 1.75rem;
+  text-align: center;
+  box-shadow: 0 20px 25px -5px var(--fb-modal-shadow), 0 8px 10px -6px var(--fb-modal-shadow);
+  color: var(--fb-modal-text);
+  font-family: inherit;
+}
+
+.fb-auth-close-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--fb-modal-sub);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.fb-auth-close-btn:hover {
+  color: var(--fb-modal-text);
+  background: var(--fb-modal-border);
+}
+
+.fb-auth-brand-badge {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.fb-auth-modal-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  color: var(--fb-modal-text);
+}
+
+.fb-auth-modal-sub {
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--fb-modal-sub);
+  margin: 0 0 1.75rem 0;
+}
+
+.fb-gsi-slot {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 48px;
+  margin-bottom: 1.5rem;
+}
+
+.fb-auth-modal-footer {
+  font-size: 0.75rem;
+  color: var(--fb-modal-sub);
+  padding-top: 1rem;
+  border-top: 1px solid var(--fb-modal-border);
+}
+
+@keyframes fbFadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}

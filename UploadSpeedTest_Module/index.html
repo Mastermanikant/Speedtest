@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload Speed Test — Frankbase</title>
+  <meta name="description" content="Accurate server-verified upload speed test. No ISP manipulation. Real bytes, real server timing." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f0f4f8;
+      color: #1e293b;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 2rem 1rem 3rem;
+    }
+
+    .container { width: 100%; max-width: 640px; }
+
+    /* Header */
+    .header { text-align: center; margin-bottom: 1.75rem; }
+    .header h1 { font-size: 1.6rem; font-weight: 800; color: #0f172a; letter-spacing: -0.03em; }
+    .header h1 span { color: #3b82f6; }
+    .header p { margin-top: 0.35rem; font-size: 0.82rem; color: #64748b; }
+
+    /* Main speed card */
+    .speed-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 1.5rem;
+      padding: 2.5rem 2rem 2rem;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin-bottom: 1rem;
+    }
+    .speed-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; margin-bottom: 0.5rem; }
+    .speed-value { font-size: 5.5rem; font-weight: 800; line-height: 1; color: #0f172a; letter-spacing: -0.04em; transition: color 0.4s; }
+    .speed-value.testing { color: #3b82f6; }
+    .speed-value.done { color: #10b981; }
+    .speed-unit { font-size: 1rem; font-weight: 500; color: #64748b; margin-top: 0.25rem; }
+    .status-text { margin-top: 0.9rem; font-size: 0.82rem; color: #64748b; min-height: 1.2em; }
+
+    /* Stats row */
+    .stats-row { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
+    .stat-card {
+      flex: 1;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 1rem;
+      padding: 1rem 0.75rem;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .stat-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #94a3b8; margin-bottom: 0.25rem; }
+    .stat-value { font-size: 1.3rem; font-weight: 700; color: #0f172a; }
+    .stat-unit { font-size: 0.65rem; color: #94a3b8; }
+
+    /* Progress bar */
+    .progress-wrapper { height: 5px; background: #e2e8f0; border-radius: 9999px; overflow: hidden; margin-bottom: 1rem; }
+    .progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #3b82f6, #10b981); border-radius: 9999px; transition: width 0.25s linear; }
+
+    /* Button */
+    .btn {
+      display: block; width: 100%; padding: 1rem;
+      background: #3b82f6; color: #fff;
+      font-family: 'Inter', sans-serif; font-size: 1rem; font-weight: 700; letter-spacing: 0.05em;
+      border: none; border-radius: 0.875rem; cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      margin-bottom: 1rem;
+    }
+    .btn:hover:not(:disabled) { background: #2563eb; transform: translateY(-1px); }
+    .btn:active:not(:disabled) { transform: none; }
+    .btn:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    /* Chart */
+    .chart-card {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 1.25rem;
+      padding: 1.25rem 1.5rem; margin-bottom: 1rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+    .chart-title { font-size: 0.82rem; font-weight: 600; color: #475569; }
+    .chart-subtitle { font-size: 0.7rem; color: #94a3b8; }
+    .chart-wrapper { height: 160px; }
+
+    /* Accuracy badge */
+    .accuracy-card {
+      background: #f0fdf4; border: 1px solid #bbf7d0;
+      border-radius: 1rem; padding: 1rem 1.25rem; margin-bottom: 1rem;
+      display: flex; align-items: flex-start; gap: 0.75rem;
+    }
+    .accuracy-icon { font-size: 1.25rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .accuracy-text { font-size: 0.78rem; color: #166534; line-height: 1.5; }
+    .accuracy-text strong { font-weight: 700; }
+
+    /* Log */
+    .log-card {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 1rem;
+      padding: 1rem; max-height: 140px; overflow-y: auto;
+      font-size: 0.72rem; font-family: 'Courier New', monospace;
+      color: #475569; line-height: 1.6;
+    }
+    .log-line.ok { color: #10b981; }
+    .log-line.info { color: #3b82f6; }
+    .log-line.err { color: #ef4444; }
+
+    .footer { text-align: center; margin-top: 1.5rem; font-size: 0.72rem; color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="header">
+      <h1>Upload <span>Speed</span> Test</h1>
+      <p>Server-verified measurement · Real bytes · No inflation</p>
+    </div>
+
+    <!-- Main speed display -->
+    <div class="speed-card">
+      <div class="speed-label">Upload Speed</div>
+      <div class="speed-value" id="speedValue">—</div>
+      <div class="speed-unit">Mbps</div>
+      <div class="status-text" id="statusText">Press the button to start</div>
+    </div>
+
+    <!-- Stats row -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Requests</div>
+        <div class="stat-value" id="reqCount">—</div>
+        <div class="stat-unit">completed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Data Sent</div>
+        <div class="stat-value" id="dataSent">—</div>
+        <div class="stat-unit">MB</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Samples</div>
+        <div class="stat-value" id="sampleCount">—</div>
+        <div class="stat-unit">readings</div>
+      </div>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="progress-wrapper"><div class="progress-bar" id="progressBar"></div></div>
+
+    <!-- Button -->
+    <button class="btn" id="startBtn">▲ START UPLOAD TEST</button>
+
+    <!-- Chart -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">📈 Live Upload Speed</span>
+        <span class="chart-subtitle">Server-verified per-request Mbps</span>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="speedChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Accuracy info -->
+    <div class="accuracy-card">
+      <div class="accuracy-icon">✅</div>
+      <div class="accuracy-text">
+        <strong>Formula: Total Server-Received Bytes ÷ Total Test Time</strong><br>
+        In 10 seconds, the server counts every byte it actually received from your device. Speed = that total divided by 10 seconds. No TCP-buffer tricks, no edge-cache inflation — just honest throughput.
+      </div>
+    </div>
+
+    <!-- Log -->
+    <div class="log-card" id="logBox"></div>
+
+    <div class="footer">Frankbase Upload Speed Test · Powered by Cloudflare Workers</div>
+  </div>
+
+  <script>
+    const speedValueEl = document.getElementById('speedValue');
+    const statusTextEl = document.getElementById('statusText');
+    const startBtn     = document.getElementById('startBtn');
+    const progressBar  = document.getElementById('progressBar');
+    const reqCountEl   = document.getElementById('reqCount');
+    const dataSentEl   = document.getElementById('dataSent');
+    const sampleCountEl= document.getElementById('sampleCount');
+    const logBox       = document.getElementById('logBox');
+
+    // Chart setup
+    const chartCtx = document.getElementById('speedChart').getContext('2d');
+    const grad = chartCtx.createLinearGradient(0, 0, 0, 160);
+    grad.addColorStop(0, 'rgba(59,130,246,0.3)');
+    grad.addColorStop(1, 'rgba(59,130,246,0)');
+    const chart = new Chart(chartCtx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Upload Mbps (server-verified)',
+          data: [],
+          borderColor: '#3b82f6',
+          backgroundColor: grad,
+          fill: true, tension: 0.4, pointRadius: 3,
+          pointBackgroundColor: '#3b82f6', borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: false,
+        interaction: { intersect: false, mode: 'index' },
+        scales: {
+          x: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { color: '#94a3b8', font: { size: 10 }, maxTicksLimit: 8 } },
+          y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => v + ' M' } }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toFixed(2)} Mbps (server-verified)` } }
+        }
+      }
+    });
+
+    let testStartTime = 0;
+    let progInterval = null;
+    let sampleIndex = 0;
+
+    function log(msg, cls = '') {
+      const line = document.createElement('div');
+      line.className = 'log-line' + (cls ? ' ' + cls : '');
+      line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      logBox.prepend(line); // newest at top
+    }
+
+    function resetUI() {
+      speedValueEl.textContent = '—';
+      speedValueEl.className = 'speed-value';
+      statusTextEl.textContent = 'Initializing...';
+      reqCountEl.textContent = '0';
+      dataSentEl.textContent = '0';
+      sampleCountEl.textContent = '0';
+      progressBar.style.width = '0%';
+      chart.data.labels = [];
+      chart.data.datasets[0].data = [];
+      chart.update('none');
+      logBox.innerHTML = '';
+      sampleIndex = 0;
+    }
+
+    function startProgress(durationMs) {
+      const step = 200;
+      let elapsed = 0;
+      // +warmup 3s = total ~11s for full test cycle
+      const total = durationMs + 3000;
+      progInterval = setInterval(() => {
+        elapsed += step;
+        progressBar.style.width = Math.min((elapsed / total) * 95, 95) + '%';
+        if (elapsed >= total) clearInterval(progInterval);
+      }, step);
+    }
+
+    startBtn.addEventListener('click', () => {
+      resetUI();
+      startBtn.disabled = true;
+      startBtn.textContent = 'TESTING...';
+      testStartTime = performance.now();
+      startProgress(8000);
+      log('Upload test started (server-verified mode)', 'info');
+
+      const worker = new Worker('./worker.js');
+
+      worker.onmessage = (e) => {
+        const { type } = e.data;
+
+        if (type === 'status') {
+          statusTextEl.textContent = e.data.message;
+          log(e.data.message, 'info');
+        }
+
+        else if (type === 'progress') {
+          const mbps = e.data.mbps;
+          speedValueEl.textContent = mbps.toFixed(2);
+          speedValueEl.className = 'speed-value testing';
+          reqCountEl.textContent = e.data.completedRequests;
+          dataSentEl.textContent = (e.data.totalConfirmedBytes / 1024 / 1024).toFixed(2);
+          sampleCountEl.textContent = e.data.completedRequests;
+
+          sampleIndex++;
+          chart.data.labels.push(`${e.data.elapsedSec}s`);
+          chart.data.datasets[0].data.push(parseFloat(mbps.toFixed(2)));
+          chart.update('none');
+
+          log(`  t=${e.data.elapsedSec}s — ${mbps.toFixed(2)} Mbps (server got ${(e.data.totalConfirmedBytes/1024/1024).toFixed(2)} MB)`);
+        }
+
+        else if (type === 'result') {
+          clearInterval(progInterval);
+          progressBar.style.width = '100%';
+
+          const finalMbps = e.data.finalMbps;
+          const mbSent = (e.data.totalConfirmedBytes / 1024 / 1024).toFixed(2);
+          speedValueEl.textContent = finalMbps.toFixed(2);
+          speedValueEl.className = 'speed-value done';
+          statusTextEl.textContent = `✅ ${finalMbps.toFixed(2)} Mbps — ${mbSent} MB ÷ ${e.data.totalElapsedSec.toFixed(1)}s`;
+          reqCountEl.textContent = e.data.completedRequests;
+          dataSentEl.textContent = mbSent;
+          sampleCountEl.textContent = e.data.completedRequests;
+
+          log(`🏁 FINAL: ${finalMbps.toFixed(2)} Mbps — ${mbSent} MB ÷ ${e.data.totalElapsedSec.toFixed(1)}s (${e.data.completedRequests} ok, ${e.data.failedRequests} failed)`, 'ok');
+          startBtn.disabled = false;
+          startBtn.textContent = '▲ START UPLOAD TEST';
+          worker.terminate();
+        }
+      };
+
+      worker.onerror = (err) => {
+        log('Worker error: ' + err.message, 'err');
+        statusTextEl.textContent = '⚠️ Error — try again';
+        startBtn.disabled = false;
+        startBtn.textContent = '▲ START UPLOAD TEST';
+        clearInterval(progInterval);
+        worker.terminate();
+      };
+
+      worker.postMessage({ command: 'start' });
+    });
+  </script>
+</body>
+</html>

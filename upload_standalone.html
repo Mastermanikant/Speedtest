@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload Speed Diagnostic Sandbox - SpeedPulse</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 1rem;
+    }
+    .card {
+      background: rgba(30, 41, 59, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(16px);
+      padding: 2.2rem;
+      border-radius: 1.25rem;
+      text-align: center;
+      max-width: 540px;
+      width: 100%;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 0 30px rgba(139, 92, 246, 0.15);
+    }
+    h1 { font-size: 1.5rem; color: #c084fc; margin-bottom: 0.5rem; }
+    p { color: #94a3b8; font-size: 0.9rem; margin-bottom: 1.5rem; }
+    
+    .gauge {
+      font-size: 3.5rem;
+      font-weight: 800;
+      color: #c084fc;
+      margin: 1rem 0;
+      text-shadow: 0 0 20px rgba(192, 132, 252, 0.4);
+    }
+    .unit { font-size: 1.2rem; color: #94a3b8; font-weight: 500; }
+
+    .btn {
+      background: linear-gradient(135deg, #8b5cf6, #ec4899);
+      color: #fff;
+      font-weight: 700;
+      font-size: 1.1rem;
+      padding: 0.9rem 2.2rem;
+      border: none;
+      border-radius: 0.75rem;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .log-box {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      border-radius: 0.75rem;
+      background: rgba(15, 23, 42, 0.8);
+      font-family: monospace;
+      font-size: 0.82rem;
+      text-align: left;
+      border: 1px solid rgba(255,255,255,0.06);
+      height: 180px;
+      overflow-y: auto;
+      color: #cbd5e1;
+    }
+    .log-line { margin: 0.25rem 0; }
+    .log-success { color: #4ade80; }
+    .log-info { color: #38bdf8; }
+    .log-warn { color: #fbbf24; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>⚡ Upload Speed Sandbox</h1>
+    <p>Isolated Upload Speed Diagnostics (512KB Chunks, Pipelined XHR)</p>
+    
+    <div class="gauge">
+      <span id="speed-val">0.00</span> <span class="unit">Mbps</span>
+    </div>
+
+    <button id="start-btn" class="btn">START UPLOAD TEST</button>
+
+    <div id="log-box" class="log-box">
+      <div class="log-line log-info">Ready to test. Click button above.</div>
+    </div>
+  </div>
+
+  <script>
+    const startBtn = document.getElementById('start-btn');
+    const speedVal = document.getElementById('speed-val');
+    const logBox = document.getElementById('log-box');
+
+    function addLog(text, type = 'info') {
+      const line = document.createElement('div');
+      line.className = `log-line log-${type}`;
+      line.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
+      logBox.appendChild(line);
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    let worker = null;
+
+    startBtn.addEventListener('click', () => {
+      startBtn.disabled = true;
+      speedVal.textContent = '0.00';
+      addLog('Starting upload worker...', 'info');
+
+      if (worker) worker.terminate();
+      worker = new Worker('/src/js/upload-standalone-worker.js?v=' + Date.now());
+
+      worker.onmessage = (e) => {
+        const { type, data, totalBytes } = e.data;
+        if (type === 'progress') {
+          speedVal.textContent = data.toFixed(2);
+          addLog(`Progress: ${data.toFixed(2)} Mbps (Transferred: ${(totalBytes / 1024 / 1024).toFixed(2)} MB)`, 'info');
+        } else if (type === 'result') {
+          speedVal.textContent = data.speedMbps.toFixed(2);
+          addLog(`🎉 FINAL UPLOAD SPEED: ${data.speedMbps.toFixed(2)} Mbps`, 'success');
+          addLog(`Total Uploaded: ${(data.totalBytes / 1024 / 1024).toFixed(2)} MB in 5 seconds`, 'success');
+          startBtn.disabled = false;
+        } else if (type === 'log') {
+          addLog(data, 'info');
+        } else if (type === 'error') {
+          addLog(`ERROR: ${data}`, 'warn');
+          startBtn.disabled = false;
+        }
+      };
+
+      worker.postMessage({ command: 'start' });
+    });
+  </script>
+</body>
+</html>

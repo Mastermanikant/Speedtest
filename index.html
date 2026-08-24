@@ -7,24 +7,27 @@
   <meta name="description" content="Accurate, unfakeable internet speed test with bufferbloat measurement, jitter detection, and low-speed adaptive engine." />
   <meta name="theme-color" content="#0f172a" />
   <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="index.css" />
+  <link rel="stylesheet" href="index.css?v=6" />
+  <link rel="stylesheet" href="frankbase-auth.css" />
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <!-- Chart.js UMD -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="frankbase-auth-core.js"></script>
 </head>
 <body>
   <div class="background-glow"></div>
   
   <div class="app-container">
     <!-- Header -->
-    <header class="glass-header">
+    <header class="glass-header" style="display:flex; justify-content:space-between; align-items:center;">
       <div class="brand">
         <span class="logo-icon">⚡</span>
         <h1>Frankbase <span>Speedtest</span></h1>
       </div>
+      <div id="fb-auth-header"></div>
     </header>
 
     <!-- Main Content Grid -->
@@ -47,6 +50,41 @@
           </div>
         </div>
 
+        <!-- Smart Settings Toggles -->
+        <div class="smart-settings">
+          <label class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-icon">📡</span>
+              <span class="toggle-label">Ping & Jitter</span>
+            </div>
+            <div class="toggle-switch">
+              <input type="checkbox" id="togglePing" checked>
+              <span class="slider round"></span>
+            </div>
+          </label>
+          <label class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-icon">⬇️</span>
+              <span class="toggle-label">Download Speed</span>
+              <span class="toggle-warning">*Consumes more data</span>
+            </div>
+            <div class="toggle-switch">
+              <input type="checkbox" id="toggleDownload" checked>
+              <span class="slider round"></span>
+            </div>
+          </label>
+          <label class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-icon">🎮</span>
+              <span class="toggle-label">Gaming Mode (Bufferbloat)</span>
+            </div>
+            <div class="toggle-switch">
+              <input type="checkbox" id="toggleBufferbloat">
+              <span class="slider round"></span>
+            </div>
+          </label>
+        </div>
+
         <!-- Start Button -->
         <button id="startBtn" class="primary-btn">
           <span class="btn-text">START SPEED TEST</span>
@@ -64,10 +102,6 @@
             <div class="legend-item">
               <span class="legend-dot" style="background: #06b6d4;"></span>
               <span class="legend-label">Download</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot" style="background: #8b5cf6;"></span>
-              <span class="legend-label">Upload</span>
             </div>
           </div>
         </div>
@@ -90,17 +124,6 @@
           </div>
         </div>
 
-        <!-- Upload Card -->
-        <div class="metric-card glass-card">
-          <div class="metric-header">
-            <span class="metric-icon upload-icon">⬆</span>
-            <span class="metric-title">Upload</span>
-          </div>
-          <div class="metric-body">
-            <span class="metric-value" id="uploadValue">--</span>
-            <span class="metric-unit">Mbps</span>
-          </div>
-        </div>
 
         <!-- Ping & Jitter Card -->
         <div class="metric-card glass-card">
@@ -169,20 +192,7 @@
             <p class="info-card-tip">💡 जितना ज़्यादा Mbps, उतना अच्छा</p>
           </div>
 
-          <!-- Upload Card -->
-          <div class="info-card glass-card">
-            <div class="info-card-top">
-              <span class="info-card-icon">⬆️</span>
-              <span class="info-card-name">Upload Speed</span>
-            </div>
-            <p class="info-card-desc">Speed at which data goes from your device to internet. Affects video calls and uploads.</p>
-            <div class="info-rating-list">
-              <div class="info-rating excellent"><span class="rating-dot"></span><span>&gt; 20 Mbps — Excellent (Live Stream)</span></div>
-              <div class="info-rating good"><span class="rating-dot"></span><span>&gt; 5 Mbps — Good (Video Calls)</span></div>
-              <div class="info-rating poor"><span class="rating-dot"></span><span>&lt; 1 Mbps — Slow (Uploads Lag)</span></div>
-            </div>
-            <p class="info-card-tip">💡 जितना ज़्यादा Mbps, उतना बेहतर</p>
-          </div>
+
         </div>
       </section>
     </main>
@@ -203,7 +213,6 @@
             <tr>
               <th>Date & Time</th>
               <th>Download</th>
-              <th>Upload</th>
               <th>Ping</th>
               <th>Jitter</th>
               <th>Bufferbloat</th>
@@ -211,7 +220,7 @@
           </thead>
           <tbody id="historyTableBody">
             <tr>
-              <td colspan="6" class="empty-msg">No tests recorded yet. Click Start Speed Test!</td>
+              <td colspan="5" class="empty-msg">No tests recorded yet. Click Start Speed Test!</td>
             </tr>
           </tbody>
         </table>
@@ -225,10 +234,15 @@
   </div>
 
   <!-- JavaScript Modules -->
-  <script type="module" src="src/js/app.js"></script>
+  <script type="module" src="src/js/app.js?v=20"></script>
   <script>
+    if (window.FrankBaseAuth) {
+      window.FrankBaseAuth.init();
+    }
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js').catch(err => console.log('SW Reg Error:', err));
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js?v=11').catch(err => console.log('SW Reg Error:', err));
+      });
     }
   </script>
 </body>
